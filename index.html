@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCA x TAGs 評鑑 (Email Delivery)</title>
+    <title>SCA x TAGs 評鑑 (Legend Ver.)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* --- 視覺風格 --- */
         body { font-family: "Microsoft JhengHei", sans-serif; background: #ece9e6; display: flex; justify-content: center; padding: 20px; min-height: 100vh; color: #2c3e50; margin: 0; }
         .container { background: white; width: 100%; max-width: 1200px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; overflow: hidden; margin-bottom: 50px; }
+        
+        /* 左右分欄 */
         .controls { flex: 1; min-width: 350px; padding: 40px; background: #f8f9fa; border-right: 1px solid #e0e0e0; height: 85vh; overflow-y: auto; }
-        .preview { flex: 1.4; min-width: 400px; padding: 40px; display: flex; flex-direction: column; align-items: center; background: #fff; }
+        .preview { flex: 1.4; min-width: 400px; padding: 40px; display: flex; flex-direction: column; align-items: center; background: #fff; height: 85vh; overflow-y: auto; }
         
         /* 標題與按鈕 */
         .header { margin-bottom: 25px; border-bottom: 3px solid #6f4e37; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
@@ -26,18 +28,26 @@
         input[type="color"] { width: 100%; height: 45px; border: none; padding: 0; cursor: pointer; }
         
         /* 滑桿 */
-        .hybrid-slider { margin-bottom: 25px; background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .hybrid-slider { margin-bottom: 20px; background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
         .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .term-coffee { font-size: 16px; font-weight: 900; color: #6f4e37; } 
-        .term-tea { font-size: 14px; color: #27ae60; font-weight: bold; } 
-        .term-desc { font-size: 12px; color: #7f8c8d; margin-bottom: 10px; display: block; }
-        input[type="range"] { width: 100%; accent-color: #6f4e37; cursor: pointer; }
+        .term-coffee { font-size: 15px; font-weight: 900; color: #6f4e37; } 
+        .term-tea { font-size: 13px; color: #27ae60; font-weight: bold; } 
         .val-display { font-weight: bold; color: #6f4e37; font-size: 18px; }
+        input[type="range"] { width: 100%; accent-color: #6f4e37; cursor: pointer; }
 
         /* 上傳按鈕 */
         .btn-submit { margin-top: 20px; background: linear-gradient(45deg, #d35400, #e67e22); color: white; border: none; padding: 15px 40px; font-size: 16px; border-radius: 50px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; box-shadow: 0 5px 15px rgba(211, 84, 0, 0.3); }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(211, 84, 0, 0.4); }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* --- 新增：風味對照表區塊 --- */
+        .legend-box { width: 100%; max-width: 550px; margin-top: 30px; background: #f9f9f9; padding: 20px; border-radius: 12px; border: 1px dashed #ccc; }
+        .legend-header { font-size: 16px; font-weight: bold; color: #6f4e37; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
+        .legend-item { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        .legend-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .legend-title { font-size: 14px; font-weight: bold; color: #2c3e50; width: 40%; }
+        .legend-title span { color: #27ae60; font-size: 12px; }
+        .legend-desc { font-size: 13px; color: #666; width: 60%; text-align: right; line-height: 1.4; }
 
         /* 彈出視窗 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; justify-content: center; align-items: center; cursor: pointer; opacity: 0; transition: opacity 0.3s ease; }
@@ -45,7 +55,7 @@
         .modal-content img { width: 100%; height: auto; display: block; }
         .modal-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 10000; }
 
-        @media (max-width: 768px) { .container { flex-direction: column; } .controls { border-right: none; height: auto; } }
+        @media (max-width: 768px) { .container { flex-direction: column; } .controls { border-right: none; height: auto; } .preview { height: auto; } }
     </style>
 </head>
 <body>
@@ -87,6 +97,11 @@
 
     <div class="preview">
         <div style="width:100%; max-width:550px; position:relative;"><canvas id="radarChart"></canvas></div>
+        
+        <div id="legendBox" class="legend-box">
+            <div class="legend-header">📖 SCA (咖啡) ⇄ TAGs (茶) 對照指南</div>
+            </div>
+
         <button class="btn-submit" id="submitBtn" onclick="saveToGoogleSheet()">☁️ 上傳資料並寄送圖片</button>
         <p style="font-size:12px; color:#888; margin-top:10px;">*資料將存入 Sheet，圖片將寄至您的 Email</p>
     </div>
@@ -94,7 +109,7 @@
 
 <script>
     // ==========================================
-    // ✅ 已更新為您的新網址
+    // ✅ 您的 Google Script 網址
     // ==========================================
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwe4QryJQ0Gcf6guVEXs1a3Z_tM3la_oq-queI09S0Qd8zql3o6L87XF3-sh705AHNymg/exec";
     // ==========================================
@@ -112,9 +127,15 @@
 
     let myChart;
     const labels = [['Acidity','明亮鮮爽'],['Sweetness','回甘蜜韻'],['Body','茶湯稠度'],['Aroma','層次調性'],['Balance','協調性'],['Structure','收斂轉化']];
+    
+    // --- 定義詳細的對照表 (Legend) ---
     const legendData = [
-        {coffee:"Acidity",tea:"明亮鮮爽",desc:"果酸韻與茶湯活性"}, {coffee:"Sweetness",tea:"回甘蜜韻",desc:"飲後生津與喉韻"}, {coffee:"Body",tea:"茶湯稠度",desc:"液體重量與飽滿感"},
-        {coffee:"Aroma",tea:"層次調性",desc:"乾濕香與前中後調"}, {coffee:"Balance",tea:"協調性",desc:"風味融合無缺陷"}, {coffee:"Structure",tea:"收斂轉化",desc:"單寧感與立體骨架"}
+        {coffee:"Acidity", tea:"明亮鮮爽", desc:"果酸韻、唾液分泌的活性"},
+        {coffee:"Sweetness", tea:"回甘蜜韻", desc:"飲後生津、蜂蜜焦糖感"},
+        {coffee:"Body", tea:"茶湯稠度", desc:"液體重量、飽滿或水感"},
+        {coffee:"Aroma", tea:"層次調性", desc:"乾濕香、前中後味變化"},
+        {coffee:"Balance", tea:"協調性", desc:"風味融合、無突兀雜味"},
+        {coffee:"Structure", tea:"收斂轉化", desc:"單寧感、微澀化開的骨架"}
     ];
 
     function initChart() {
@@ -127,6 +148,19 @@
             },
             options: { responsive: true, scales: { r: { angleLines: { color: '#e0e0e0' }, grid: { color: '#f0f0f0' }, suggestedMin: 0, suggestedMax: 5, ticks: { display: false, stepSize: 1 }, pointLabels: { font: { size: 14, family: "Microsoft JhengHei", weight: 'bold' }, color: '#555' } } }, plugins: { legend: { display: false }, title: { display: true, text: '2025 蜜香紅茶・手沖', font: { size: 24, weight: 'bold' }, padding: { bottom: 20 }, color: '#6f4e37' } } }
         });
+
+        // --- 自動生成對照表內容 ---
+        const legendBox = document.getElementById('legendBox');
+        let html = `<div class="legend-header">📖 SCA (咖啡) ⇄ TAGs (茶) 對照指南</div>`;
+        legendData.forEach(item => {
+            html += `
+                <div class="legend-item">
+                    <div class="legend-title">${item.coffee} <br><span>(${item.tea})</span></div>
+                    <div class="legend-desc">${item.desc}</div>
+                </div>
+            `;
+        });
+        legendBox.innerHTML = html;
     }
 
     function updateChart() {
@@ -192,7 +226,6 @@
         const btn = document.getElementById('submitBtn');
         const email = document.getElementById('cupperEmail').value;
 
-        // 防呆機制：檢查網址與 Email
         if(GOOGLE_SCRIPT_URL.includes("您的")) { alert("請填入 Script 網址！"); return; }
         if(!email || !email.includes("@")) { alert("⚠️ 請填寫正確的 Email，才能接收風味圖！"); return; }
 
